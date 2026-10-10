@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Focus Guard</string>
+    <string name="title_focus_guard">Focus lock</string>
+    <string name="label_duration">Select lock duration</string>
+    <string name="hint_days">Days</string>
+    <string name="hint_hours">Hours</string>
+    <string name="hint_minutes">Minutes</string>
+    <string name="button_start">Start block</string>
+    <string name="button_stop">Stop block</string>
+    <string name="button_enable_accessibility">Open accessibility settings</string>
+    <string name="title_blocked_apps">Apps to block</string>
+    <string name="status_running">Block active until %1$s</string>
+    <string name="status_idle">No active block</string>
+    <string name="message_select_apps">Choose the apps you want to block for this study session.</string>
+    <string name="lock_message">This app is blocked by Focus Guard.</string>
+    <string name="lock_hint">Stay on the study plan and return after the timer ends.</string>
+</resources>

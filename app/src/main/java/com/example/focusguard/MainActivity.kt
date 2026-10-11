@@ -29,7 +29,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var hoursInput: EditText
     private lateinit var minutesInput: EditText
     private lateinit var startButton: Button
-    private lateinit var stopButton: Button
     private lateinit var settingsButton: Button
     private val selectedPackages = linkedSetOf<String>()
 
@@ -43,11 +42,9 @@ class MainActivity : AppCompatActivity() {
         hoursInput = findViewById(R.id.hoursInput)
         minutesInput = findViewById(R.id.minutesInput)
         startButton = findViewById(R.id.startBlockButton)
-        stopButton = findViewById(R.id.stopBlockButton)
         settingsButton = findViewById(R.id.settingsButton)
 
         startButton.setOnClickListener { startBlocking() }
-        stopButton.setOnClickListener { stopBlocking() }
         settingsButton.setOnClickListener {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
@@ -115,11 +112,20 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val days = daysInput.text.toString().toLongOrNull() ?: 0L
-        val hours = hoursInput.text.toString().toLongOrNull() ?: 0L
-        val minutes = minutesInput.text.toString().toLongOrNull() ?: 0L
+        val days = readDurationValue(daysInput) ?: return
+        val hours = readDurationValue(hoursInput) ?: return
+        val minutes = readDurationValue(minutesInput) ?: return
+        val maxMinutes = 30L * 24L * 60L
+        if (days > 30L || hours > maxMinutes / 60L || minutes > maxMinutes) {
+            showDurationError()
+            return
+        }
         val totalMinutes = days * 24 * 60 + hours * 60 + minutes
-        val totalMillis = if (totalMinutes <= 0L) 60 * 1000L else totalMinutes * 60_000L
+        if (totalMinutes !in 1L..maxMinutes) {
+            showDurationError()
+            return
+        }
+        val totalMillis = totalMinutes * 60_000L
 
         val deadline = System.currentTimeMillis() + totalMillis
         val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -128,19 +134,22 @@ class MainActivity : AppCompatActivity() {
             putLong(DEADLINE_KEY, deadline)
         }
 
-        val intent = Intent(this, FocusGuardService::class.java)
-        startService(intent)
         Toast.makeText(this, "Focus lock started.", Toast.LENGTH_SHORT).show()
         refreshStatus()
     }
 
-    private fun stopBlocking() {
-        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        prefs.edit {
-            remove(DEADLINE_KEY)
+    private fun readDurationValue(input: EditText): Long? {
+        val text = input.text.toString().trim()
+        val value = if (text.isEmpty()) 0L else text.toLongOrNull()
+        if (value == null || value < 0L) {
+            showDurationError()
+            return null
         }
-        Toast.makeText(this, "Focus lock stopped.", Toast.LENGTH_SHORT).show()
-        refreshStatus()
+        return value
+    }
+
+    private fun showDurationError() {
+        Toast.makeText(this, "Set a duration from 1 minute up to 30 days.", Toast.LENGTH_LONG).show()
     }
 
     private fun refreshStatus() {
@@ -152,14 +161,21 @@ class MainActivity : AppCompatActivity() {
             val targetText = formatDuration(remaining)
             statusText.text = getString(R.string.status_running, targetText)
             startButton.isEnabled = false
-            stopButton.isEnabled = true
         } else {
             statusText.text = getString(R.string.status_idle)
-            startButton.isEnabled = true
-            stopButton.isEnabled = false
             prefs.edit {
                 remove(DEADLINE_KEY)
             }
+        }
+
+        val isLocked = deadline > System.currentTimeMillis()
+        startButton.isEnabled = !isLocked
+        daysInput.isEnabled = !isLocked
+        hoursInput.isEnabled = !isLocked
+        minutesInput.isEnabled = !isLocked
+        settingsButton.isEnabled = !isLocked
+        for (index in 0 until appsContainer.childCount) {
+            appsContainer.getChildAt(index).isEnabled = !isLocked
         }
     }
 

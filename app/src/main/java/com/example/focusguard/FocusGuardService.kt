@@ -11,14 +11,13 @@ class FocusGuardService : AccessibilityService() {
         val packageName = event?.packageName?.toString() ?: return
         if (isBlockedPackage(packageName)) {
             val intent = Intent(this, BlockedActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 putExtra("blocked_package", packageName)
             }
             try {
                 startActivity(intent)
             } catch (_: Exception) {
             }
-            performGlobalAction(GLOBAL_ACTION_HOME)
         }
     }
 
